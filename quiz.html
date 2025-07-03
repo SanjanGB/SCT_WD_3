@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quiz Show Game</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: linear-gradient(145deg, #e0c3fc, #8ec5fc);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      background: #ffffffcc;
+      backdrop-filter: blur(10px);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      width: 95%;
+      max-width: 700px;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    input[type="text"], button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 10px;
+      border-radius: 10px;
+      border: 1px solid #bbb;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #673ab7;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background-color: #512da8;
+    }
+
+    .question-box {
+      margin: 20px 0;
+    }
+
+    .options label {
+      display: block;
+      margin: 12px 0;
+      padding: 14px;
+      background: #f1f1f1;
+      border-radius: 10px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .options input[type="radio"] {
+      margin-right: 10px;
+    }
+
+    .options input[type="radio"]:checked + label {
+      border-color: #673ab7;
+      background: #ede7f6;
+    }
+
+    .options label:hover {
+      background: #e0e0e0;
+    }
+
+    .timer {
+      color: #c62828;
+      font-weight: bold;
+      text-align: right;
+    }
+
+    .summary {
+      margin-top: 20px;
+      font-size: 16px;
+      white-space: pre-line;
+    }
+
+    .download-btn {
+      background: #4caf50;
+      margin-top: 10px;
+    }
+
+    h2, h3, h4 {
+      color: #311b92;
+    }
+
+    .start-img {
+      width: 100%;
+      max-height: 200px;
+      object-fit: contain;
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
+
+    .fade {
+      transition: all 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container fade" id="introScreen">
+  <img src="https://cdn-icons-png.flaticon.com/512/2748/2748580.png" alt="Quiz Icon" class="start-img" />
+  <h2>🎓 Welcome to the Quiz Show!</h2>
+  <p>Enter a topic to begin (e.g., <b>space</b>, <b>cricket</b>, <b>india</b>):</p>
+  <input type="text" id="topicInput" placeholder="Enter your quiz topic..." />
+  <button onclick="startQuiz()">Start Quiz</button>
+</div>
+
+<div class="container fade" id="quizScreen" style="display:none;">
+  <h3 id="quizTopic"></h3>
+  <div class="timer">⏳ Time left: <span id="timer">20</span>s</div>
+  <div class="question-box">
+    <h4 id="questionText"></h4>
+    <div class="options" id="optionsContainer"></div>
+  </div>
+  <button onclick="submitAnswer()">Next</button>
+</div>
+
+<div class="container fade" id="resultScreen" style="display:none;">
+  <h2>🎉 Quiz Completed</h2>
+  <div id="scoreResult"></div>
+  <div id="highScoreText"></div>
+  <div class="summary" id="answerSummary"></div>
+  <button onclick="downloadSummary()" class="download-btn">📥 Download Summary</button>
+  <button onclick="restart()">🔄 Restart</button>
+</div>
+
+<script>
+  const pool = {
+    space: [
+      { question: "Which planet is known as the Red Planet?", options: ["Earth", "Mars", "Jupiter", "Venus"], answer: "Mars" },
+      { question: "Who was the first person on the Moon?", options: ["Buzz Aldrin", "Neil Armstrong", "Yuri Gagarin", "Kalpana Chawla"], answer: "Neil Armstrong" },
+      { question: "What is the Sun mainly made of?", options: ["Oxygen", "Hydrogen", "Helium", "Carbon"], answer: "Hydrogen" },
+      { question: "Which galaxy is Earth located in?", options: ["Andromeda", "Whirlpool", "Milky Way", "Cartwheel"], answer: "Milky Way" },
+      { question: "What does NASA stand for?", options: ["National Aeronautics and Space Administration", "New Aero Space Agency", "North America Space Alliance", "None"], answer: "National Aeronautics and Space Administration" }
+    ],
+    cricket: [
+      { question: "Who has scored the most centuries in international cricket?", options: ["Virat Kohli", "Ricky Ponting", "Sachin Tendulkar", "MS Dhoni"], answer: "Sachin Tendulkar" },
+      { question: "How many players are on a cricket team?", options: ["11", "10", "12", "9"], answer: "11" },
+      { question: "What is the term for 3 wickets in 3 balls?", options: ["Triple out", "Hat-trick", "Treble", "Strike"], answer: "Hat-trick" },
+      { question: "Where is the ICC headquarters located?", options: ["London", "Dubai", "Sydney", "Melbourne"], answer: "Dubai" },
+      { question: "Which country won the 2011 Cricket World Cup?", options: ["Australia", "India", "Pakistan", "England"], answer: "India" }
+    ],
+    india: [
+      { question: "Who is the Father of the Nation?", options: ["Subhash Chandra Bose", "Jawaharlal Nehru", "Mahatma Gandhi", "Dr. B.R. Ambedkar"], answer: "Mahatma Gandhi" },
+      { question: "Which is the national bird of India?", options: ["Peacock", "Sparrow", "Eagle", "Pigeon"], answer: "Peacock" },
+      { question: "When is India’s Independence Day?", options: ["15 August", "26 January", "2 October", "1 May"], answer: "15 August" },
+      { question: "Which river is the longest in India?", options: ["Yamuna", "Godavari", "Ganga", "Brahmaputra"], answer: "Ganga" },
+      { question: "What is the currency of India?", options: ["Dollar", "Rupee", "Pound", "Euro"], answer: "Rupee" }
+    ]
+  };
+
+  let topic = "", questions = [], current = 0, score = 0;
+  let timer, timeLeft = 20;
+  let userAnswers = [];
+  let highScore = localStorage.getItem("highScore") || 0;
+
+  function startQuiz() {
+    topic = document.getElementById("topicInput").value.toLowerCase();
+    if (!pool[topic]) return alert("Topic not found. Try: space, cricket, india.");
+    questions = [...pool[topic]];
+    shuffle(questions);
+    questions = questions.slice(0, 5);
+    current = 0; score = 0; userAnswers = [];
+
+    document.getElementById("introScreen").style.display = "none";
+    document.getElementById("quizScreen").style.display = "block";
+    document.getElementById("quizTopic").innerText = `Topic: ${capitalize(topic)}`;
+    loadQuestion();
+  }
+
+  function loadQuestion() {
+    resetTimer();
+    const q = questions[current];
+    document.getElementById("questionText").innerText = `${current + 1}. ${q.question}`;
+    document.getElementById("optionsContainer").innerHTML = q.options.map(opt =>
+      `<label><input type="radio" name="opt" value="${opt}"> ${opt}</label>`
+    ).join('');
+    startTimer();
+  }
+
+  function submitAnswer() {
+    clearInterval(timer);
+    const selected = document.querySelector('input[name="opt"]:checked');
+    const chosen = selected ? selected.value : "No Answer";
+    const correct = questions[current].answer;
+    if (chosen === correct) score++;
+    userAnswers.push({ q: questions[current].question, correct, chosen });
+    current++;
+    if (current < questions.length) loadQuestion();
+    else showResult();
+  }
+
+  function showResult() {
+    document.getElementById("quizScreen").style.display = "none";
+    document.getElementById("resultScreen").style.display = "block";
+    document.getElementById("scoreResult").innerText = `🎯 You scored ${score} / ${questions.length}`;
+    if (score > highScore) {
+      highScore = score;
+      localStorage.setItem("highScore", highScore);
+    }
+    document.getElementById("highScoreText").innerText = `🏆 High Score: ${highScore}`;
+    let summary = userAnswers.map((a, i) =>
+      `${i + 1}. ${a.q}\nYour Answer: ${a.chosen}\nCorrect Answer: ${a.correct}\n`
+    ).join("\n");
+    document.getElementById("answerSummary").innerText = summary;
+  }
+
+  function downloadSummary() {
+    const text = userAnswers.map((a, i) =>
+      `${i + 1}. ${a.q}\nYour: ${a.chosen} | Correct: ${a.correct}`
+    ).join("\n\n");
+    const blob = new Blob([text], { type: "text/plain" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "quiz_summary.txt";
+    link.click();
+  }
+
+  function restart() {
+    document.getElementById("resultScreen").style.display = "none";
+    document.getElementById("introScreen").style.display = "block";
+    document.getElementById("topicInput").value = "";
+  }
+
+  function startTimer() {
+    timeLeft = 20;
+    document.getElementById("timer").innerText = timeLeft;
+    timer = setInterval(() => {
+      timeLeft--;
+      document.getElementById("timer").innerText = timeLeft;
+      if (timeLeft === 0) submitAnswer();
+    }, 1000);
+  }
+
+  function resetTimer() {
+    clearInterval(timer);
+    document.getElementById("timer").innerText = 20;
+  }
+
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  }
+
+  function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+</script>
+
+</body>
+</html>
